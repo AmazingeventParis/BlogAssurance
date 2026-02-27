@@ -1,15 +1,17 @@
-import { GoogleGenerativeAI } from '@google/generative-ai'
+import Anthropic from '@anthropic-ai/sdk'
 
-let genai: GoogleGenerativeAI | null = null
+let client: Anthropic | null = null
 
-function getClient(): GoogleGenerativeAI {
-  if (!genai) {
-    const apiKey = process.env.GEMINI_API_KEY
-    if (!apiKey) throw new Error('GEMINI_API_KEY not configured')
-    genai = new GoogleGenerativeAI(apiKey)
+function getClient(): Anthropic {
+  if (!client) {
+    const apiKey = process.env.ANTHROPIC_API_KEY
+    if (!apiKey) throw new Error('ANTHROPIC_API_KEY not configured')
+    client = new Anthropic({ apiKey })
   }
-  return genai
+  return client
 }
+
+const DEFAULT_MODEL = 'claude-sonnet-4-20250514'
 
 export async function callGemini(options: {
   messages: { role: 'user' | 'assistant'; content: string }[]
@@ -18,35 +20,32 @@ export async function callGemini(options: {
   maxTokens?: number
   temperature?: number
 }): Promise<{ content: string; tokensIn: number; tokensOut: number }> {
-  const client = getClient()
-  const modelName = options.model || 'gemini-2.0-flash'
-  const model = client.getGenerativeModel({
-    model: modelName,
-    systemInstruction: options.system || undefined,
-    generationConfig: {
-      maxOutputTokens: options.maxTokens || 4096,
-      temperature: options.temperature ?? 0.7,
-    },
+  const anthropic = getClient()
+
+  const response = await anthropic.messages.create({
+    model: DEFAULT_MODEL,
+    max_tokens: options.maxTokens || 4096,
+    temperature: options.temperature ?? 0.7,
+    system: options.system || undefined,
+    messages: options.messages.map((m) => ({
+      role: m.role,
+      content: m.content,
+    })),
   })
-  const allMessages = options.messages
-  const history = allMessages.slice(0, -1).map((m) => ({
-    role: m.role === 'assistant' ? ('model' as const) : ('user' as const),
-    parts: [{ text: m.content }],
-  }))
-  const lastMessage = allMessages[allMessages.length - 1]
-  const chat = model.startChat({ history })
-  const result = await chat.sendMessage(lastMessage.content)
-  const response = result.response
-  const text = response.text()
-  const usage = response.usageMetadata
+
+  const text =
+    response.content[0].type === 'text' ? response.content[0].text : ''
+
   return {
     content: text,
-    tokensIn: usage?.promptTokenCount || 0,
-    tokensOut: usage?.candidatesTokenCount || 0,
+    tokensIn: response.usage.input_tokens,
+    tokensOut: response.usage.output_tokens,
   }
 }
 
-export async function callGeminiJSON<T = unknown>(options: Parameters<typeof callGemini>[0]): Promise<T> {
+export async function callGeminiJSON<T = unknown>(
+  options: Parameters<typeof callGemini>[0]
+): Promise<T> {
   const response = await callGemini(options)
   let content = response.content.trim()
   if (content.startsWith('```json')) content = content.slice(7)
@@ -63,34 +62,47 @@ export async function streamGemini(options: {
   maxTokens?: number
   temperature?: number
 }): Promise<ReadableStream> {
-  const client = getClient()
-  const modelName = options.model || 'gemini-2.0-flash'
-  const model = client.getGenerativeModel({
-    model: modelName,
-    systemInstruction: options.system || undefined,
-    generationConfig: {
-      maxOutputTokens: options.maxTokens || 4096,
-      temperature: options.temperature ?? 0.7,
-    },
-  })
-  const contents = options.messages.map((m) => ({
-    role: m.role === 'assistant' ? ('model' as const) : ('user' as const),
-    parts: [{ text: m.content }],
-  }))
-  const result = await model.generateContentStream({ contents })
+  const anthropic = getClient()
   const encoder = new TextEncoder()
+
+  const stream = anthropic.messages.stream({
+    model: DEFAULT_MODEL,
+    max_tokens: options.maxTokens || 4096,
+    temperature: options.temperature ?? 0.7,
+    system: options.system || undefined,
+    messages: options.messages.map((m) => ({
+      role: m.role,
+      content: m.content,
+    })),
+  })
+
   return new ReadableStream({
     async start(controller) {
       try {
-        for await (const chunk of result.stream) {
-          const text = chunk.text()
-          if (text) {
-            controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'text', text })}\n\n`))
+        for await (const event of stream) {
+          if (
+            event.type === 'content_block_delta' &&
+            event.delta.type === 'text_delta'
+          ) {
+            const text = event.delta.text
+            if (text) {
+              controller.enqueue(
+                encoder.encode(
+                  `data: ${JSON.stringify({ type: 'text', text })}\n\n`
+                )
+              )
+            }
           }
         }
-        controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'done' })}\n\n`))
+        controller.enqueue(
+          encoder.encode(`data: ${JSON.stringify({ type: 'done' })}\n\n`)
+        )
       } catch (error) {
-        controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'error', error: String(error) })}\n\n`))
+        controller.enqueue(
+          encoder.encode(
+            `data: ${JSON.stringify({ type: 'error', error: String(error) })}\n\n`
+          )
+        )
       } finally {
         controller.close()
       }
