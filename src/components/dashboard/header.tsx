@@ -13,7 +13,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { SidebarNav } from "@/components/dashboard/sidebar-nav"
 
 interface HeaderProps {
   userEmail: string
@@ -40,9 +39,6 @@ export function Header({ userEmail }: HeaderProps) {
   return (
     <header className="sticky top-0 z-40 border-b bg-background">
       <div className="flex h-14 items-center gap-4 px-4 md:px-6">
-        {/* Mobile menu trigger - rendered inside SidebarNav */}
-        <SidebarNav />
-
         <div className="flex-1" />
 
         <DropdownMenu>
