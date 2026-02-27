@@ -10,7 +10,7 @@ const updateProjectSchema = z.object({
     .enum(['informational', 'commercial', 'transactional', 'navigational'])
     .optional(),
   status: z
-    .enum(['draft', 'serp_done', 'outline_done', 'writing', 'completed'])
+    .enum(['draft', 'serp_done', 'outline_done', 'writing', 'review_done', 'completed'])
     .optional(),
   tone: z.string().max(100).nullable().optional(),
   persona: z.string().max(200).nullable().optional(),
@@ -170,6 +170,7 @@ export async function DELETE(_request: Request, { params }: RouteParams) {
     }
 
     // Delete related records first (cascade order)
+    await supabase.from('ba_reviews').delete().eq('project_id', projectId)
     await supabase.from('ba_draft_blocks').delete().eq('project_id', projectId)
     await supabase.from('ba_outlines').delete().eq('project_id', projectId)
     await supabase.from('ba_serp_results').delete().eq('project_id', projectId)

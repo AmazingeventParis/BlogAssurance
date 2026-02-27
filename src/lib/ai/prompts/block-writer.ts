@@ -9,6 +9,7 @@ import {
   SEO_ANTI_AI_PATTERNS,
   SEO_KEYWORD_RULES,
   SEO_WRITING_STYLE_RULES,
+  SEO_SOURCE_CITATION_RULES,
 } from './seo-guidelines'
 
 interface BlockWriterParams {
@@ -160,6 +161,8 @@ CRITICAL RULES:
 5. Every piece of content must be ORIGINAL — do not copy or closely paraphrase common boilerplate text.
 
 ${SEO_EEAT_RULES}
+
+${SEO_SOURCE_CITATION_RULES}
 
 ${SEO_ANTI_AI_PATTERNS}
 

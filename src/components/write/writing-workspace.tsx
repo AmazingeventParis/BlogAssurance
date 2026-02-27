@@ -119,7 +119,7 @@ export function WritingWorkspace({ projectId }: WritingWorkspaceProps) {
           </p>
           <p className="text-green-600 text-sm mt-1">
             {totalWordCount.toLocaleString('fr-FR')} mots au total.
-            Vous pouvez maintenant exporter votre article.
+            Vous pouvez maintenant lancer la relecture experte.
           </p>
         </div>
       )}

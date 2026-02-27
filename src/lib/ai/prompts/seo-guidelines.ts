@@ -136,6 +136,26 @@ Regles H4 :
 - Optionnel : n'utilise des H4 que si le contenu est suffisamment dense pour le justifier`
 
 /**
+ * Source citation rules for inline references.
+ * Used by: block-writer
+ */
+export const SEO_SOURCE_CITATION_RULES = `Regles de CITATION DES SOURCES inline :
+- Chaque affirmation factuelle, chiffre ou statistique DOIT etre suivie d'une source entre parentheses
+- Format : (Source : [Nom de la source], [annee ou detail])
+- Exemples :
+  - (Source : FFA, rapport annuel 2025)
+  - (Source : Code des assurances, art. L113-2)
+  - (Source : ACPR, etude 2024)
+  - (Source : INSEE, donnees 2025)
+  - (Source : DREES, statistiques sante 2024)
+  - (Source : Argus de l'assurance, barometre 2025)
+- Vise 2 a 5 citations par bloc de ~300 mots
+- Sources plausibles du domaine assurance : FFA, ACPR, Code des assurances, INSEE, DREES, Argus de l'assurance, courtiers agrees, etudes sectorielles
+- NE PAS citer les evidences ou connaissances generales (ex: "l'assurance auto est obligatoire" n'a pas besoin de source)
+- NE PAS inventer de liens URL — uniquement le nom de la source et l'annee/reference
+- Les citations renforcent le E-E-A-T (autorite et fiabilite) et la credibilite de l'article`
+
+/**
  * Intent-specific strategies for plan, writing, and critique.
  * Each search intent has radically different structure, style, and SEO techniques.
  * Used by: outline-architect, block-writer

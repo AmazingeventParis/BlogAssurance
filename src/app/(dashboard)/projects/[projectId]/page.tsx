@@ -5,6 +5,7 @@ import {
   Search,
   ListTree,
   PenLine,
+  ClipboardCheck,
   Download,
   ArrowLeft,
   Trash2,
@@ -43,7 +44,7 @@ const PIPELINE_STEPS: {
     label: 'Brief',
     icon: FileText,
     href: () => null,
-    minStatus: ['draft', 'serp_done', 'outline_done', 'writing', 'completed'],
+    minStatus: ['draft', 'serp_done', 'outline_done', 'writing', 'review_done', 'completed'],
     activeStatus: ['draft'],
   },
   {
@@ -51,7 +52,7 @@ const PIPELINE_STEPS: {
     label: 'SERP',
     icon: Search,
     href: (id) => `/projects/${id}/serp`,
-    minStatus: ['draft', 'serp_done', 'outline_done', 'writing', 'completed'],
+    minStatus: ['draft', 'serp_done', 'outline_done', 'writing', 'review_done', 'completed'],
     activeStatus: ['serp_done'],
   },
   {
@@ -59,7 +60,7 @@ const PIPELINE_STEPS: {
     label: 'Outline',
     icon: ListTree,
     href: (id) => `/projects/${id}/outline`,
-    minStatus: ['serp_done', 'outline_done', 'writing', 'completed'],
+    minStatus: ['serp_done', 'outline_done', 'writing', 'review_done', 'completed'],
     activeStatus: ['outline_done'],
   },
   {
@@ -67,15 +68,23 @@ const PIPELINE_STEPS: {
     label: 'Redaction',
     icon: PenLine,
     href: (id) => `/projects/${id}/write`,
-    minStatus: ['outline_done', 'writing', 'completed'],
+    minStatus: ['outline_done', 'writing', 'review_done', 'completed'],
     activeStatus: ['writing'],
+  },
+  {
+    key: 'review',
+    label: 'Relecture',
+    icon: ClipboardCheck,
+    href: (id) => `/projects/${id}/review`,
+    minStatus: ['writing', 'review_done', 'completed'],
+    activeStatus: ['review_done'],
   },
   {
     key: 'export',
     label: 'Export',
     icon: Download,
     href: (id) => `/projects/${id}/export`,
-    minStatus: ['completed'],
+    minStatus: ['review_done', 'completed'],
     activeStatus: ['completed'],
   },
 ]
@@ -85,6 +94,7 @@ const STATUS_ORDER: ProjectStatus[] = [
   'serp_done',
   'outline_done',
   'writing',
+  'review_done',
   'completed',
 ]
 
@@ -402,13 +412,30 @@ export default async function ProjectDetailPage({ params }: PageProps) {
               </Button>
             </Link>
 
+            {/* Review */}
+            <Link
+              href={`/projects/${typedProject.id}/review`}
+              className="block"
+            >
+              <Button
+                variant={currentStatusIndex >= 3 ? 'default' : 'outline'}
+                className="w-full justify-start"
+                disabled={currentStatusIndex < 3}
+              >
+                <ClipboardCheck className="mr-2 h-4 w-4" />
+                {currentStatusIndex >= 4
+                  ? 'Voir la relecture'
+                  : 'Lancer la relecture'}
+              </Button>
+            </Link>
+
             {/* Export */}
             <Link
               href={`/projects/${typedProject.id}/export`}
               className="block"
             >
               <Button
-                variant={currentStatusIndex >= 4 ? 'default' : 'outline'}
+                variant={currentStatusIndex >= 5 ? 'default' : 'outline'}
                 className="w-full justify-start"
                 disabled={currentStatusIndex < 4}
               >

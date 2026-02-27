@@ -1,4 +1,4 @@
-export type ProjectStatus = 'draft' | 'serp_done' | 'outline_done' | 'writing' | 'completed'
+export type ProjectStatus = 'draft' | 'serp_done' | 'outline_done' | 'writing' | 'review_done' | 'completed'
 export type BlockStatus = 'pending' | 'writing' | 'done' | 'error'
 export type SearchIntent = 'informational' | 'commercial' | 'transactional' | 'navigational'
 
@@ -82,7 +82,45 @@ export const PROJECT_STATUS_LABELS: Record<ProjectStatus, string> = {
   serp_done: 'SERP analysee',
   outline_done: 'Plan genere',
   writing: 'Redaction',
+  review_done: 'Relecture faite',
   completed: 'Termine',
+}
+
+// --- Review types ---
+
+export interface ReviewIssue {
+  dimension: 'accuracy' | 'sources' | 'coherence' | 'completeness' | 'seo'
+  severity: 'critical' | 'major' | 'minor'
+  location: string
+  description: string
+  suggestion: string
+}
+
+export interface ReviewCheckResult {
+  score: number
+  label: string
+  summary: string
+  issues: ReviewIssue[]
+}
+
+export interface ReviewResult {
+  overall_score: number
+  dimensions: {
+    accuracy: ReviewCheckResult
+    sources: ReviewCheckResult
+    coherence: ReviewCheckResult
+    completeness: ReviewCheckResult
+    seo: ReviewCheckResult
+  }
+  suggestions: string[]
+}
+
+export interface Review {
+  id: string
+  project_id: string
+  review_json: ReviewResult
+  version: number
+  created_at: string
 }
 
 export const INTENT_LABELS: Record<SearchIntent, string> = {

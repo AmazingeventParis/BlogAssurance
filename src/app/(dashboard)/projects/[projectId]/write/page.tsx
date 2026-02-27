@@ -174,10 +174,10 @@ export default function WritePage() {
             {allDone && (
               <Button
                 onClick={() =>
-                  router.push(`/projects/${projectId}/export`)
+                  router.push(`/projects/${projectId}/review`)
                 }
               >
-                Continuer vers l&apos;export
+                Continuer vers la relecture
               </Button>
             )}
           </div>
