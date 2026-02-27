@@ -117,8 +117,8 @@ export default function ExportPage() {
           <CardContent className="pt-6">
             <p className="text-destructive text-center">{error}</p>
             <div className="flex justify-center mt-4">
-              <Link href={`/projects/${projectId}/review`}>
-                <Button variant="outline">Retour a la relecture</Button>
+              <Link href={`/projects/${projectId}/rewrite`}>
+                <Button variant="outline">Retour a la reecriture</Button>
               </Link>
             </div>
           </CardContent>
@@ -133,10 +133,10 @@ export default function ExportPage() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <Link
-            href={`/projects/${projectId}/review`}
+            href={`/projects/${projectId}/rewrite`}
             className="text-sm text-muted-foreground hover:text-foreground mb-2 inline-block"
           >
-            &larr; Retour a la relecture
+            &larr; Retour a la reecriture
           </Link>
           <h1 className="text-2xl font-bold">Export de l&apos;article</h1>
         </div>

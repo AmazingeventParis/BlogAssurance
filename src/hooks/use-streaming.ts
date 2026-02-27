@@ -2,6 +2,13 @@
 
 import { useCallback, useRef } from 'react'
 import { useWritingStore } from '@/stores/writing-store'
+import type { ReviewIssue } from '@/types'
+
+export interface StreamOptions {
+  mode?: 'write' | 'rewrite'
+  reviewContext?: { issues: ReviewIssue[]; globalSuggestions: string[] }
+  userComment?: string
+}
 
 export function useStreaming() {
   const abortRef = useRef<AbortController | null>(null)
@@ -13,7 +20,7 @@ export function useStreaming() {
   } = useWritingStore()
 
   const startStreaming = useCallback(
-    async (projectId: string, blockId: string) => {
+    async (projectId: string, blockId: string, options?: StreamOptions) => {
       // Abort any in-progress stream
       abortRef.current?.abort()
       abortRef.current = new AbortController()
@@ -28,7 +35,12 @@ export function useStreaming() {
           {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ blockId }),
+            body: JSON.stringify({
+              blockId,
+              mode: options?.mode,
+              reviewContext: options?.reviewContext,
+              userComment: options?.userComment,
+            }),
             signal: abortRef.current.signal,
           }
         )

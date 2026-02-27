@@ -162,7 +162,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     }
 
     // --- Update project status to 'writing' if not already ---
-    if (project.status !== 'writing' && project.status !== 'review_done' && project.status !== 'completed') {
+    if (project.status !== 'writing' && project.status !== 'review_done' && project.status !== 'rewriting' && project.status !== 'completed') {
       await supabase
         .from('ba_projects')
         .update({ status: 'writing', updated_at: new Date().toISOString() })

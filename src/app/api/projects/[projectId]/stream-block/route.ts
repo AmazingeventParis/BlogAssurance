@@ -1,5 +1,5 @@
 // ============================================================
-// BlogAssurance — SSE Streaming Block Writer API Route
+// BlogAssurance — SSE Streaming Block Writer/Rewriter API Route
 // POST /api/projects/[projectId]/stream-block
 // ============================================================
 
@@ -7,10 +7,21 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { streamGemini } from '@/lib/ai/gemini'
 import { buildBlockWriterPrompt } from '@/lib/ai/prompts/block-writer'
-import type { OutlineStructure } from '@/types'
+import { buildBlockRewriterPrompt } from '@/lib/ai/prompts/block-rewriter'
+import type { OutlineStructure, ReviewIssue } from '@/types'
 
 interface RouteParams {
   params: Promise<{ projectId: string }>
+}
+
+interface RequestBody {
+  blockId: string
+  mode?: 'write' | 'rewrite'
+  reviewContext?: {
+    issues: ReviewIssue[]
+    globalSuggestions: string[]
+  }
+  userComment?: string
 }
 
 export async function POST(request: NextRequest, { params }: RouteParams) {
@@ -29,8 +40,8 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     }
 
     // --- Parse request body ---
-    const body = await request.json()
-    const { blockId } = body as { blockId: string }
+    const body = (await request.json()) as RequestBody
+    const { blockId, mode = 'write', reviewContext, userComment } = body
 
     if (!blockId) {
       return NextResponse.json(
@@ -109,29 +120,66 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       .update({ status: 'writing', updated_at: new Date().toISOString() })
       .eq('id', blockId)
 
-    // --- Update project status to 'writing' if not already ---
-    if (project.status !== 'writing' && project.status !== 'review_done' && project.status !== 'completed') {
-      await supabase
-        .from('ba_projects')
-        .update({ status: 'writing', updated_at: new Date().toISOString() })
-        .eq('id', projectId)
+    // --- Update project status ---
+    if (mode === 'rewrite') {
+      if (project.status === 'review_done') {
+        await supabase
+          .from('ba_projects')
+          .update({ status: 'rewriting', updated_at: new Date().toISOString() })
+          .eq('id', projectId)
+      }
+    } else {
+      if (project.status !== 'writing' && project.status !== 'review_done' && project.status !== 'rewriting' && project.status !== 'completed') {
+        await supabase
+          .from('ba_projects')
+          .update({ status: 'writing', updated_at: new Date().toISOString() })
+          .eq('id', projectId)
+      }
     }
 
     // --- Build prompt ---
-    const { system, user: userPrompt } = buildBlockWriterPrompt({
-      keyword: project.main_keyword,
-      block: {
-        type: outlineBlock?.type ?? 'paragraph',
-        heading: draftBlock.title,
-        word_count: outlineBlock?.word_count ?? draftBlock.word_count ?? 200,
-        writing_directive: outlineBlock?.writing_directive,
-        format_hint: outlineBlock?.format_hint,
-      },
-      previousHeadings,
-      articleTitle: structure.title,
-      tone: project.tone,
-      persona: project.persona,
-    })
+    let system: string
+    let userPrompt: string
+
+    if (mode === 'rewrite') {
+      const result = buildBlockRewriterPrompt({
+        keyword: project.main_keyword,
+        block: {
+          type: outlineBlock?.type ?? 'paragraph',
+          heading: draftBlock.title,
+          word_count: outlineBlock?.word_count ?? draftBlock.word_count ?? 200,
+          writing_directive: outlineBlock?.writing_directive,
+          format_hint: outlineBlock?.format_hint,
+        },
+        currentContent: draftBlock.content_html || '',
+        reviewIssues: reviewContext?.issues ?? [],
+        globalSuggestions: reviewContext?.globalSuggestions ?? [],
+        userComment,
+        previousHeadings,
+        articleTitle: structure.title,
+        tone: project.tone,
+        persona: project.persona,
+      })
+      system = result.system
+      userPrompt = result.user
+    } else {
+      const result = buildBlockWriterPrompt({
+        keyword: project.main_keyword,
+        block: {
+          type: outlineBlock?.type ?? 'paragraph',
+          heading: draftBlock.title,
+          word_count: outlineBlock?.word_count ?? draftBlock.word_count ?? 200,
+          writing_directive: outlineBlock?.writing_directive,
+          format_hint: outlineBlock?.format_hint,
+        },
+        previousHeadings,
+        articleTitle: structure.title,
+        tone: project.tone,
+        persona: project.persona,
+      })
+      system = result.system
+      userPrompt = result.user
+    }
 
     // --- Stream Gemini response ---
     const stream = await streamGemini({

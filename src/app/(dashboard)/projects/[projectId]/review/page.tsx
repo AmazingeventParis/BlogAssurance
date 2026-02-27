@@ -137,9 +137,9 @@ export default function ReviewPage() {
           </Button>
           {review && (
             <Button
-              onClick={() => router.push(`/projects/${projectId}/export`)}
+              onClick={() => router.push(`/projects/${projectId}/rewrite`)}
             >
-              Valider et exporter
+              Lancer la reecriture
             </Button>
           )}
         </div>

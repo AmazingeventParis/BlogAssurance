@@ -31,7 +31,7 @@ function getCurrentYear(): number {
   return new Date().getFullYear()
 }
 
-function getBlockTypeInstructions(type: string, formatHint?: string): string {
+export function getBlockTypeInstructions(type: string, formatHint?: string): string {
   switch (type) {
     case 'h2':
       return `

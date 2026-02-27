@@ -1,4 +1,4 @@
-export type ProjectStatus = 'draft' | 'serp_done' | 'outline_done' | 'writing' | 'review_done' | 'completed'
+export type ProjectStatus = 'draft' | 'serp_done' | 'outline_done' | 'writing' | 'review_done' | 'rewriting' | 'completed'
 export type BlockStatus = 'pending' | 'writing' | 'done' | 'error'
 export type SearchIntent = 'informational' | 'commercial' | 'transactional' | 'navigational'
 
@@ -83,6 +83,7 @@ export const PROJECT_STATUS_LABELS: Record<ProjectStatus, string> = {
   outline_done: 'Plan genere',
   writing: 'Redaction',
   review_done: 'Relecture faite',
+  rewriting: 'Reecriture',
   completed: 'Termine',
 }
 
@@ -120,6 +121,15 @@ export interface Review {
   project_id: string
   review_json: ReviewResult
   version: number
+  created_at: string
+}
+
+export interface BlockComment {
+  id: string
+  block_id: string
+  project_id: string
+  comment_text: string
+  status: 'pending' | 'applied'
   created_at: string
 }
 

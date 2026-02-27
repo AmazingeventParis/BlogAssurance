@@ -6,6 +6,7 @@ import {
   ListTree,
   PenLine,
   ClipboardCheck,
+  RefreshCw,
   Download,
   ArrowLeft,
   Trash2,
@@ -44,7 +45,7 @@ const PIPELINE_STEPS: {
     label: 'Brief',
     icon: FileText,
     href: () => null,
-    minStatus: ['draft', 'serp_done', 'outline_done', 'writing', 'review_done', 'completed'],
+    minStatus: ['draft', 'serp_done', 'outline_done', 'writing', 'review_done', 'rewriting', 'completed'],
     activeStatus: ['draft'],
   },
   {
@@ -52,7 +53,7 @@ const PIPELINE_STEPS: {
     label: 'SERP',
     icon: Search,
     href: (id) => `/projects/${id}/serp`,
-    minStatus: ['draft', 'serp_done', 'outline_done', 'writing', 'review_done', 'completed'],
+    minStatus: ['draft', 'serp_done', 'outline_done', 'writing', 'review_done', 'rewriting', 'completed'],
     activeStatus: ['serp_done'],
   },
   {
@@ -60,7 +61,7 @@ const PIPELINE_STEPS: {
     label: 'Outline',
     icon: ListTree,
     href: (id) => `/projects/${id}/outline`,
-    minStatus: ['serp_done', 'outline_done', 'writing', 'review_done', 'completed'],
+    minStatus: ['serp_done', 'outline_done', 'writing', 'review_done', 'rewriting', 'completed'],
     activeStatus: ['outline_done'],
   },
   {
@@ -68,7 +69,7 @@ const PIPELINE_STEPS: {
     label: 'Redaction',
     icon: PenLine,
     href: (id) => `/projects/${id}/write`,
-    minStatus: ['outline_done', 'writing', 'review_done', 'completed'],
+    minStatus: ['outline_done', 'writing', 'review_done', 'rewriting', 'completed'],
     activeStatus: ['writing'],
   },
   {
@@ -76,15 +77,23 @@ const PIPELINE_STEPS: {
     label: 'Relecture',
     icon: ClipboardCheck,
     href: (id) => `/projects/${id}/review`,
-    minStatus: ['writing', 'review_done', 'completed'],
+    minStatus: ['writing', 'review_done', 'rewriting', 'completed'],
     activeStatus: ['review_done'],
+  },
+  {
+    key: 'rewrite',
+    label: 'Reecriture',
+    icon: RefreshCw,
+    href: (id) => `/projects/${id}/rewrite`,
+    minStatus: ['review_done', 'rewriting', 'completed'],
+    activeStatus: ['rewriting'],
   },
   {
     key: 'export',
     label: 'Export',
     icon: Download,
     href: (id) => `/projects/${id}/export`,
-    minStatus: ['review_done', 'completed'],
+    minStatus: ['rewriting', 'completed'],
     activeStatus: ['completed'],
   },
 ]
@@ -95,6 +104,7 @@ const STATUS_ORDER: ProjectStatus[] = [
   'outline_done',
   'writing',
   'review_done',
+  'rewriting',
   'completed',
 ]
 
@@ -429,15 +439,32 @@ export default async function ProjectDetailPage({ params }: PageProps) {
               </Button>
             </Link>
 
+            {/* Rewrite */}
+            <Link
+              href={`/projects/${typedProject.id}/rewrite`}
+              className="block"
+            >
+              <Button
+                variant={currentStatusIndex >= 4 ? 'default' : 'outline'}
+                className="w-full justify-start"
+                disabled={currentStatusIndex < 4}
+              >
+                <RefreshCw className="mr-2 h-4 w-4" />
+                {currentStatusIndex >= 5
+                  ? 'Voir la reecriture'
+                  : 'Lancer la reecriture'}
+              </Button>
+            </Link>
+
             {/* Export */}
             <Link
               href={`/projects/${typedProject.id}/export`}
               className="block"
             >
               <Button
-                variant={currentStatusIndex >= 5 ? 'default' : 'outline'}
+                variant={currentStatusIndex >= 6 ? 'default' : 'outline'}
                 className="w-full justify-start"
-                disabled={currentStatusIndex < 4}
+                disabled={currentStatusIndex < 5}
               >
                 <Download className="mr-2 h-4 w-4" />
                 Exporter l&apos;article

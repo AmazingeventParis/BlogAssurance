@@ -16,6 +16,8 @@ const statusStyles: Record<ProjectStatus, string> = {
     'bg-orange-100 text-orange-700 border-orange-200 hover:bg-orange-100',
   review_done:
     'bg-violet-100 text-violet-700 border-violet-200 hover:bg-violet-100',
+  rewriting:
+    'bg-indigo-100 text-indigo-700 border-indigo-200 hover:bg-indigo-100',
   completed:
     'bg-green-100 text-green-700 border-green-200 hover:bg-green-100',
 }
