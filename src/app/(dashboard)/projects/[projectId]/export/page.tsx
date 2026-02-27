@@ -1,6 +1,7 @@
 'use client'
 
-import { useEffect, useState, use } from 'react'
+import { useEffect, useState, useCallback } from 'react'
+import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import { HTMLPreview } from '@/components/export/html-preview'
 import { ExportActions } from '@/components/export/export-actions'
@@ -8,18 +9,16 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 
-interface ExportPageProps {
-  params: Promise<{ projectId: string }>
-}
-
 interface OutlineData {
   title: string
   meta_description: string
   slug: string
 }
 
-export default function ExportPage({ params }: ExportPageProps) {
-  const { projectId } = use(params)
+export default function ExportPage() {
+  const params = useParams()
+  const projectId = params.projectId as string
+
   const [html, setHtml] = useState<string>('')
   const [bodyHtml, setBodyHtml] = useState<string>('')
   const [loading, setLoading] = useState(true)
@@ -27,62 +26,76 @@ export default function ExportPage({ params }: ExportPageProps) {
   const [outline, setOutline] = useState<OutlineData | null>(null)
   const [wordCount, setWordCount] = useState(0)
 
-  useEffect(() => {
-    async function fetchExportData() {
-      setLoading(true)
-      setError(null)
+  const fetchExportData = useCallback(async () => {
+    setLoading(true)
+    setError(null)
 
-      try {
-        // Fetch full HTML and body-only HTML in parallel
-        const [fullRes, bodyRes, projectRes] = await Promise.all([
-          fetch(`/api/projects/${projectId}/export?format=html`),
-          fetch(`/api/projects/${projectId}/export?format=body`),
-          fetch(`/api/projects/${projectId}`),
-        ])
+    try {
+      // Fetch full HTML, body-only HTML, and project data in parallel
+      const [fullRes, bodyRes, projectRes] = await Promise.all([
+        fetch(`/api/projects/${projectId}/export?format=html`),
+        fetch(`/api/projects/${projectId}/export?format=body`),
+        fetch(`/api/projects/${projectId}`),
+      ])
 
-        if (!fullRes.ok) {
-          const errData = await fullRes.json().catch(() => ({ error: 'Erreur inconnue' }))
-          throw new Error(errData.error || 'Erreur lors de la recuperation du HTML')
+      // The export API returns HTML (text/html), not JSON
+      // On error it returns JSON, on success it returns HTML
+      if (!fullRes.ok) {
+        let errMsg = 'Erreur lors de la recuperation du HTML'
+        try {
+          const errData = await fullRes.json()
+          errMsg = errData.error || errMsg
+        } catch {
+          // Response was not JSON, use default message
         }
-
-        const fullHtml = await fullRes.text()
-        const bodyContent = await bodyRes.text()
-
-        setHtml(fullHtml)
-        setBodyHtml(bodyContent)
-
-        // Count words from body content by stripping HTML tags
-        const textContent = bodyContent.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
-        const words = textContent ? textContent.split(/\s+/).length : 0
-        setWordCount(words)
-
-        // Get outline info from project data
-        if (projectRes.ok) {
-          const projectData = await projectRes.json()
-          // Fetch outline separately for meta info
-          const outlineRes = await fetch(`/api/projects/${projectId}`)
-          if (outlineRes.ok) {
-            // Extract outline info from the full HTML
-            const titleMatch = fullHtml.match(/<title>(.*?)<\/title>/)
-            const metaMatch = fullHtml.match(/<meta name="description" content="(.*?)"/)
-            const mainKeyword = projectData.project?.main_keyword || ''
-
-            setOutline({
-              title: titleMatch ? titleMatch[1] : mainKeyword,
-              meta_description: metaMatch ? metaMatch[1] : '',
-              slug: mainKeyword.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''),
-            })
-          }
-        }
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Erreur inconnue')
-      } finally {
-        setLoading(false)
+        throw new Error(errMsg)
       }
-    }
 
-    fetchExportData()
+      const fullHtml = await fullRes.text()
+      const bodyContent = bodyRes.ok ? await bodyRes.text() : ''
+
+      setHtml(fullHtml)
+      setBodyHtml(bodyContent)
+
+      // Count words from body content by stripping HTML tags
+      const textContent = bodyContent
+        .replace(/<[^>]*>/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim()
+      const words = textContent ? textContent.split(/\s+/).filter(Boolean).length : 0
+      setWordCount(words)
+
+      // Extract outline info from HTML and project data
+      const titleMatch = fullHtml.match(/<title>(.*?)<\/title>/)
+      const metaMatch = fullHtml.match(/<meta name="description" content="(.*?)"/)
+
+      let mainKeyword = ''
+      if (projectRes.ok) {
+        try {
+          const projectData = await projectRes.json()
+          mainKeyword = projectData.project?.main_keyword || ''
+        } catch {
+          // Ignore JSON parse errors
+        }
+      }
+
+      setOutline({
+        title: titleMatch?.[1] || mainKeyword || 'Article',
+        meta_description: metaMatch?.[1] || '',
+        slug: mainKeyword
+          ? mainKeyword.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
+          : 'article',
+      })
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erreur inconnue')
+    } finally {
+      setLoading(false)
+    }
   }, [projectId])
+
+  useEffect(() => {
+    fetchExportData()
+  }, [fetchExportData])
 
   if (loading) {
     return (
